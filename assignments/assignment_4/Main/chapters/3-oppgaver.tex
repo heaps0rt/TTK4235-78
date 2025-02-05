@@ -1,0 +1,416 @@
+\section{Oppgave (100 \%) - Grunnleggende debugging med \texttt{gdb}}\label{sec:3-oppgave}
+
+Denne øvingen er strukturert som en walkthrough. Gjennom øvingen skal dere kompilere feilaktige kodesnutter og debugge den med \verb|gdb|. Ofte vil feilene være veldig opplagt, men motstå allikevel fristelsen til å skippe over. Hensikten med denne øvingen, er at dere skal vite hvordan dere bruker GDB, så for å få godkjent, må dere vise en studass at dere til en viss grad forstår hva som skjer i denne øvingen. Terskelen er ikke altfor høy, og dere får ganske greit godkjent om dere viser at dere forstår hvordan dere kan debugge et vilkårlig program med GDB.
+
+\subsection{Breakpoints}
+
+Breakpoints er den mest brukte-, og en av de nyttigste egenskapene til en debugger. De tillater brukeren å midlertidig stoppe kodekjøringen for å inspisere variabler, og liste opp hvordan man kom til linjen man stoppet på. GDB operer med tre forskjellige typer breakpoints:
+
+\begin{itemize}
+    \item \textit{Breakpoint} stopper kodekjøringen når man kommer til en spesifikk linje.
+    \item \textit{Watchpoint} stopper kodekjøringen dersom en spesifisert variabel eller minneadresse endrer verdi.
+    \item \textit{Catchpoint} stopper kodekjøringen dersom en definert hendelse inntreffer. Hendelsen kan for eksempel være et kall til \verb|exec|, et \verb|syscall|, en \verb|assert|, eller en \verb|exception|.
+\end{itemize}
+
+Av disse er vanlig \textit{breakpoints} desidert av mest nytte. Selv om \textit{watch}- og \textit{catchpoints} av og til kan være praktiske å ha, blir de fort ubrukelige dersom man debugger kode med flere tråder.
+
+For å demonstrere hvordan man vanligvis bruker \textit{breakpoints}, skal vi bruke programmet \verb|break|. Kall \verb|make break| for å kompilere, og \verb|gdb -tui break| (i samme mappe som programmet \verb|break|) for å starte GDB med programmet vårt. Dersom det \verb|make| ikke fungerer slik det skal kan det være på grunn av at det mangler noen rettigheter for brukeren. Prøv derfor \verb|sudo make| i stedet.
+
+\textit{Breakpoints} kan settes på forskjellige måter. Om man nå skriver \verb|break local_call| setter man et \textit{breakpoint} på starten av funksjonen \verb|local_call|. Dersom man nå kaller \verb|break 9| setter man et \textit{breakpoint} på kodelinje 9. Gitt at du nå har gjort alt dette, kan vi kalle \verb|run| og få noe tilsvarende som dette:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) break local_call
+Breakpoint 1 at 0x63e: file source/break.c, line 4.
+(gdb) break 9
+Breakpoint 2 at 0x655: file source/break.c, line 11.
+(gdb) run
+Starting program: /home/student/Desktop/Oving - 4/programs/break
+Breakpoint 2, main () at source/break.c:11
+\end{lstlisting}
+
+
+Som man kan se, så stopper GDB først på linje 11, til tross for at vi satte et \textit{breakpoint} til linje 9. Dette er fordi det ikke skjer noe spennende på linje 9; vi oppretter kun en variabel, men vi gir den ikke noen verdi. GDB operer egentlig ikke med kodelinjene du ser på toppen av skjermen, men med maskininstruksjonene de har kompilert til. Det kan derfor fint hende at linje 9 ikke svarer til en instruksjon GDB kan stoppe ved (i dette eksemplet så ser man at GDB automatisk setter en \textit{breakpoint} i linje 11). Dette er verdt å ha i bakhodet dersom GDB tilsynelatende ikke gjør det du sier.
+
+I tillegg til vanlig \textit{breakpoints} har GDB også betingede \textit{breakpoints}. Dette er \textit{breakpoints} som kun aktiveres dersom en betingelse er oppfylt. Skriv \verb|break 14 if| \verb|i>60| for å sette et \textit{breakpoint} midt i \verb|for|-løkken, som kun aktiveres dersom teller-variabelen er større enn 60. Hvis man kaller \verb|continue| for å gå videre fra linje 11, vil dere stoppe på linje 14. Om dere nå bruker \verb|print|-kommandoen vil dere se at teller-variabelen \verb|i| har verdi 61. Altså ble ikke \textit{breakpointet} aktivert før vi ønsket.
+
+Sett derimot nå at vi i utgangspunktet tok feil; vi ønsket ikke å stoppe når \verb|i>60|, men \verb|i>80|. Om vi skriver \verb|info break| får vi opp en oversikt over hvilke \textit{breakpoints} vi har:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) info break
+Num    Type       Disp    Enb     Address             What
+1      breakpoint keep    y       0x000055555555463e  in local_call at
+-> source/break.c:4
+2      breakpoint keep    y       0x0000555555554655  in main at
+->source/break.c:11
+       breakpoint already hit 1 time
+3      breakpoint keep    y       0x0000555555554665  in main at
+->source/break.c:14
+       stop only if i > 60
+       breakpoint already hit 1 time
+\end{lstlisting}
+
+Vi kan nå kalle \verb|condition 3 i > 80| for å endre betingelsen til \textit{breakpoint} nummer 3 til å kunne aktiveres dersom \verb|i| er større enn 80. Nå kan dere kalle \verb|continue|, etterfulgt av \verb|print i|, som vil demonstrere at vi faktisk bare stopper når vi vil:
+
+\begin{verbatim}
+(gdb) condition 3 i > 80
+(gdb) continue
+Continuing.
+Breakpoint 3, main () at source/break.c:14
+(gdb) print i
+$2 = 81
+\end{verbatim}
+
+Vi kan fjerne betingelsen fra \textit{breakpoint} 3 ved å simpelthen kalle \verb|condition 3|. Om vi nå kaller \verb|continue| vil vi derimot stoppe i \verb|for|-løkken hver gang, fordi \verb|i| nå alltid er større enn 80. Om vi er ferdig med \textit{breakpoint} 3, kan vi skru det av ved å kalle \verb|disable 3| - dette vil endre \verb|Enb|-feltet (Enable) fra \verb|y| til \verb|n|:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) disable 3
+(gdb) info break
+Num    Type       Disp    Enb     Address             What
+1      breakpoint keep    y       0x000055555555463e  in local_call at
+->source/break.c:4
+2      breakpoint keep    y       0x0000555555554655  in main at
+->source/break.c:11
+       breakpoint already hit 1 time
+3      breakpoint keep    n       0x0000555555554665  in main at
+->source/break.c:14
+       breakpoint already hit 3 times|
+\end{lstlisting}
+
+Vi kan også permanent slette \textit{breakpoint} 3 ved å kalle \verb|delete 3|, om vi vet at vi ikke har behov for det igjen. I tillegg til å jobbe på en fil, kan GDB også sette \textit{breakpoints} i andre filer, som for eksempel filen \verb|break2.c|, ved å bruke en \verb|<fil>:<linje eller funksjon>|-syntaks:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]  
+(gdb) break break2.c:library_call
+Breakpoint 4 at 0x55555555468a: file source/break2.c, line 3.
+\end{lstlisting}
+
+
+Om man kun trenger å stoppe et sted en gang, så har GDB også midlertidige \textit{breakpoints}, som på samme måte som vanlige \textit{breakpoints}, men med kodeordet \verb|tbreak| istedenfor \verb|break|:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) tbreak library_call
+Note: breakpoint 4 also set at pc 0x55555555468a.
+Temporary breakpoint 5 at 0x55555555468a: file source/break2.c, line 3
+\end{lstlisting}
+
+
+Om dere nå kaller \verb|info break| vil dere se at \verb|Disp|-feltet (disposition) er forskjellig fra vanlige \textit{breakpoints}:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+4 breakpoint keep y 0x000055555555468a in library_call at
+->source/break2.c:3
+5 breakpoint del  y 0x000055555555468a in library_call at
+->source/break2.c:3
+\end{lstlisting}
+
+
+hvor \verb|keep| betyr at \textit{breakpointet} vil beholdes, mens \verb|del| indikerer at et \textit{breakpoint} vil slettes etter at det blir truffet.
+
+En siste ting som er greit å vite om \textit{breakpoints} er at du kan tilknytte vilkårlige kommandoer til hvert enkelt \textit{breakpoint}, som vil kjøre hver gang \textit{breakpointet} aktiveres. Om dere for eksempel ønsker å legge inn en \verb|printf|, uten å måtte endre koden og gjenkompilere, kan dere gjøre slik:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) break 14
+Breakpoint 6 at 0x555555554665: file source/break.c, line 14.
+(gdb) command 6
+Type commands for breakpoint(s) 6, one per line.
+End with a line saying just "end".
+>printf "Value of i is %d\n", i
+>end
+\end{lstlisting}
+
+Dette vil skrive ut verdien til \verb|i| på samme måte som `gammeldags \verb|printf|-debugging' gjør, men du slipper å tukle med koden og kompilere på nytt. GDB kan faktisk kalle en hvilken som helst funksjon - også bibliotek-funksjoner - via \textit{breakpoint}-kommandoer. Dette er en veldig kraftig egenskap.
+
+\subsection{Inspeksjon og endring av variabler}
+
+GDB kan inspisere og endre variabler under kjøring. For å illustrere hvordan dette kan gjøres, skal vi bruke programmet \verb|inspect|. Kall \verb|make inspect|, og deretter \verb|gdb -tui inspect| for å starte GDB.
+
+Sett opp et break-point i slutten av \verb|main| ved å kalle \verb|break 21|. Kall deretter \verb|run|. Når GDB stopper vil det være like før programmet returnerer. Kall nå \verb|print stat_array| og \verb|print dyn_array|:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+Breakpoint 1, main () at source/inspect.c:21
+(gdb) print stat_array
+$\texttt{\$}$1 = {1, 2, 3, 4, 5}
+(gdb) print dyn_array
+$\texttt{\$}$2 = (int *) 0x555555756260
+
+\end{lstlisting}
+
+
+
+
+Som man kan se ut fra koden i \verb|inspect.c|, inneholder \verb|stat_array| og \verb|dyn_array| den samme informasjonen, men de er allokert henholdsvis statisk og dynamisk. Når vi printer den dynamiske tabellen, får vi bare pekeren. Dette skjer fordi GDB ikke kan være sikker på nøyaktig hva som ligger bak pekeren. Ettersom vi vet hva pekeren peker til, kan vi utnytte en spesiell syntaks for å skrive den ut som et array:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) print *dyn_array@5
+$\texttt{\$}$3 = {1, 2, 3, 4, 5}
+
+\end{lstlisting}
+
+
+Dette betyr bare at vi skal dereferere pekeren, og ta 5 elementer, og skrive dem ut som en tabell. Det er ikke veldig ofte man trenger denne syntaksen, men den kan være veldig nyttig i noen sammenhenger.
+
+I tillegg, kan GDB også skrive ut structs:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) print PID
+$\texttt{\$}$4 = {kp = 100, ki = 0, kd = 0}
+\end{lstlisting}
+
+Kanskje det mest nyttigste med GDB er at den kan endre variabler underveis ved å bruke kommandoen \verb|set|:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) print some_number
+$\texttt{\$}$5 = 1
+(gdb) set some_number = 2
+(gdb) print some_number
+$\texttt{\$}$6 = 2
+\end{lstlisting}
+
+
+hvor \verb|$|-tegnet brukes som en referanse til GDB sin variabelhistorie. Dette tallet vil øke med en for hver kommando.
+
+\subsubsection*{Display}
+
+GDB har også en kommando kalt \verb|display|, som fungerer på samme måte som \verb|print|, men automatisk skriver ut en variabel hver gang et \textit{breakpoint} aktiveres, så lenge variabelen finnes på øverste stack-frame. For å stoppe en aktiv \verb|display| brukes kommandoen \verb|undisplay| med ID-en til \verb|display|-et.
+
+For å prøve ut \verb|display| kan dere kalle \verb|break 14| for å opprette et \textit{breakpoint} ved linja \verb|dyn_array[i] = i + 1;|, etterfulgt av \verb|display *dyn_array@5|, og til slutt \verb|run| for å starte programmet på nytt. Hver gang dere treffer break-pointet vil dere se at ett nytt element er blitt satt i \verb|dyn_array|. For å slippe å skrive \verb|continue| mange ganger kan dere forresten bare trykke enter for å repetere siste kommando som ble kjørt.
+
+\subsection{\texttt{step} og \texttt{next}}
+
+Det som gjør GDB spesielt nyttig er at den lar brukeren gå gjennom koden linje for linje. Kompiler og debug programmet \verb|step| ved å kalle \verb|make step| etterfulgt av \verb|gdb -tui step|. I GDB kaller dere \verb|break main|. fulgt av \verb|run|. Programmet vil nå stoppe på linjen \verb|int prod1 = multiply(2, 6);|. Kall nå kommandoen \verb|step| fire-fem ganger og legg merke til hva som skjer.
+
+Deretter starter dere programmet på nytt ved å kalle \verb|run| igjen. Denne gangen kaller dere \verb|next| isdenfor \verb|step| et par ganger. Som dere ser, fungerer de to kommandoene litt annerledes:
+
+\begin{itemize}
+    \item \verb|step| vi gå en kodelinje videre, og for hvert funksjonskall den møter på, vil \verb|step| gå inn i implementasjonen.
+    \item \verb|next| vil gjøre det samme som \verb|step|, men vil kjøre alle funksjonskall den møter i bakgrunnen - uten å gå inn i implementasjonen.
+\end{itemize}
+
+Altså: når du kaller \verb|step| vil den kun gå inn i en implementasjon dersom det finnes et symbol for funksjonen. Dermed vil den gå inn i all kode kompilert med flagget \verb|-g|, men hoppe over ting den ikke kan lese. Dermed vil ikke \verb|step| prøve å gå inn i implementasjonen til for eksempel \verb|printf|.
+
+\subsection{\texttt{until} og \texttt{finish}}
+
+Om man kommer inn i en løkke, eller havner i en funksjon som man er sikker på er feilfri, så er det mulig å kunne hoppe ut av den. For dette formålet har GDB kommandoene \verb|until| og \verb|finish|. Kall først \verb|make until|, og deretter \verb|gdb -tui until|. Inne i GDB oppretter dere et \textit{breakpoint} for \verb|main| ved å kalle \verb|break main|.
+
+Hvis dere nå kaller \verb|run| vi dere stoppe i toppen av \verb|for|-løkka, fordi dette er den første interessante kodelinjen i \verb|main|. Dersom man nå ønsker å hoppe over løkken, og fortsette rett etter den, kan man kalle \verb|until| fire ganger. Dere vil se at GDB nå stopper på linje 21 som er rett før \verb|pointless_function|-kallet.
+
+Kommandoen \verb|until| skal hoppe til kodelinjen som er 1 større enn nåværende kodelinje. Grunnen til at dere måtte kalle \verb|until| tre ganger istedenfor en, er at GDB arbeider med maskinkoden til programmet. I C-kode, ser det ut som om at vi gjør en test i starten av løkken - men i den ferdigkompilerte koden skjer dette faktisk i bunnen av løkken. Dette er ikke veldig viktig å huske på, men det er greit å vite dersom en kommando tilsynelatende oppfører seg litt rart.
+
+Når dere så har kommet til \verb|pointless_function|, kaller dere \verb|step| for å gå inn i implementasjonen. Sett nå at dere har gjort dere ferdig inne i denne funksjonen og ønsker å komme tilbake til \verb|main|. Man kunne brukt midlertidige \textit{breakpoints} og \verb|continue|, men dette blir fort tungvint. Man kan heller bruke \verb|finish| som er GDB sin egendefinerte kommando for akkurat dette. Denne kommandoen vil fullføre et funksjonskall, og stoppe kodeutføringen rett etter funksjonen returnerer.
+
+
+\subsection{Callstack}
+
+
+Ofte er tilfellet at en variabel uventet skifter verdi, eller at en funksjon kalles ut av det blå. Dette skjer vanligvis fordi man har en lang linje av funksjoner etter hverandre, der en av dem er feil. For å gjøre det lettere å inspisere hva som faktisk skjer, kan GDB skrive ut kall-stacken, eller hver enkelt \textit{stack-frame}.
+
+
+
+Kall først \verb|make trace| for å kompilere programmet \verb|trace|, etterfulgt av \verb|gdb -tui| \verb|trace| for å debugge det. Fra GDB kan dere nå kalle \verb|watch global_value| for å stoppe når den globale variabelen \verb|global_value| på mystisk vis skifter verdi. Om dere nå kaller \verb|run|, vil dere få en output som ligner på denne:
+
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) watch global_value
+Hardware watchpoint 1: global_value
+(gdb) run
+Starting program: /home/student/Desktop/Oving - 4/programs/trace
+
+Hardware watchpoint 1: global_value
+
+Old value = 0
+New value = 1
+myst_func_1 (level=0) at source/trace.c:40
+
+\end{lstlisting}
+
+
+Variabelen skifter altså verdi fra 0 til 1, og i dette tilfellet skjedde det før linje 40. Som man kan se, så kan vi ikke være helt sikre på nøyaktig hvilken linje endringen skjedde, ettersom GDB egentlig jobber med maskinkoden til programmet, og prøver deretter så godt den kan å koble maskinkoden til C-koden. Heldigvis er det ikke så veldig interessant hvilken linje endringen skjedde på, så lenge vi får en anelse. 
+
+Kall nå \verb|backtrace|. Dette vil skrive ut kall-stacken til programmet - altså hvilke funksjonskall som har hendt til nå. Dere vil få noe som ser slik ut:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) backtrace
+#0 myst_func_1 (level=0) at trace.c:40
+#1 0x0000555555554929 in myst_func_4 (level=1) at source/trace.c:96
+#2 0x0000555555554956 in myst_func_4 (level=2) at source/trace.c:105
+#3 0x0000555555554956 in myst_func_4 (level=3) at source/trace.c:105
+#4 0x000055555555483c in myst_func_2 (level=4) at source/trace.c:59
+#5 0x000055555555481e in myst_func_2 (level=5) at source/trace.c:53
+#6 0x000055555555481e in myst_func_2 (level=6) at source/trace.c:53
+#7 0x0000555555554938 in myst_func_4 (level=7) at source/trace.c:99
+#8 0x0000555555554956 in myst_func_4 (level=8) at source/trace.c:105
+#9 0x000055555555483c in myst_func_2 (level=9) at source/trace.c:59
+#10 0x0000555555554791 in myst_func_1 (level=10) at source/trace.c:30
+#11 0x0000555555554979 in main () at source/trace.c:113
+
+\end{lstlisting}
+
+Helt på bunnen vil dere se at ugangspunktet vårt var \verb|main|, som så kalte \verb|myst_func1| med \verb|level|-parameter lik 10. Deretter vet vi at en rekke kall til forskjellige \verb|myst_func|-funksjoner blir gjort, før vi kommer til \verb|myst_func_1| som må ha endret \verb|global_value|. En slik utskrift av kall-stacken kan gi en veldig god indikasjon på hvor ting går galt.
+
+
+Om man har lyst på en spesifikk \textit{stack-frame} kan GDB også gi oss det. En stackframe er ett nivå på kall-stacken, og inneholder informasjon om hvilken funksjon som ble kalt, og hvilke argumenter som ble gitt. Kall \verb|frame| for å skrive ut øverste stack-frame, eller for eksempel \verb|frame 8| for å skrive ut en stack-frame 8 nivåer ned:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) frame 6
+#6 0x000055555555481e in myst_func_2 (level=6) at source/trace.c:53
+(gdb) frame 8
+#8 0x0000555555554956 in myst_func_4 (level=8) at source/trace.c:105
+\end{lstlisting}
+
+
+\subsection{Segfault}
+
+For å illustrere en segmentation fault, kan dere kompiler programmet \verb|seg1| ved å kalle \verb|make seg1|, etterfulgt av \verb|./seg1|. Dette programmet vil prøve å allokere minne den ikke eier eller har tilgang til. For å undersøke hva som er feil, bruker vi GDB som vanlig ved å kalle \verb|gdb -tui seg1|. Dersom vi først nå kjører programmet ved å kalle \verb|run| vil vi få noe slikt:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+Program received signal SIGSEGV, Segmentation fault.
+0x000055555555461e in main () at source/seg1.c:7
+\end{lstlisting}
+
+
+Dette forteller oss at vi gjorde en ulovlig minneoperasjon i \verb|seg1.c|, på linje 7. Vi har allerede bare fra dette mye å gå på dersom vi skal fikse på koden. Kall deretter \verb|print i|, for å skrive ut verdien av teller-variabelen. Den eksakte verdien er avhengig av arkitektur, men den burde være negativ. Utifra koden er det ganske åpenbart, men la oss nå late som om at vi fortsatt ikke er helt sikre på hvorfor.
+
+For å få mer informasjon, kan vi kalle \verb|break 7|, for å sette opp et \textit{breakpoint} på linje 7. Så kaller dere \verb|info break| for å få en liste med informasjon om \textit{breakpointene} dere har i programmet. Dere vil ha noe som ser slik ut:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) break 7
+Breakpoint 1 at 0x555555554607: file source/seg1.c, line 7.
+(gdb) info break
+Num    Type        Disp Enb  Address            What
+1      breakpoint  keep y    0x0000555555554607 in main at source/seg1.c:7
+\end{lstlisting}
+
+
+Vi skal nå knytte kommandoer til \textit{breakpointet}, som skal kjøre hver gang vi kommer til det. Kall \verb|command 1| for å komme inn i kommando-modus for \textit{breakpoint} 1. Deretter skriver dere \verb|silent| på en linje, \verb|info local| på neste linje, og til slutt \verb|end| på siste linje - slik:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) command 1
+Type commands for breakpoint(s) 1, one per line.
+End with a line saying just "end".
+>silent
+>info local
+>end
+\end{lstlisting}
+
+
+Om dere nå kaller \verb|info break| igjen vil dere se at \textit{breakpoint} 1 har fått to kommandoer knyttet til seg:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+(gdb) info break
+Num Type       Disp Enb  Address            What
+1   breakpoint keep y    0x0000555555554607 in main at source/seg1.c:7
+    silent
+    info local
+\end{lstlisting}
+
+
+
+Her betyr \verb|silent| at GDB ikke vil skrive ut informasjon om \textit{breakpointet} hver gang det aktiverer, og \verb|info local| betyr at vi ønsker å skrive ut de lokale variablene som finnes til skjermen for inspeksjon. 
+
+Om vi nå starter programmet på nytt ved å kalle \verb|run|, vil GDB stoppe på linje 7, og skrive ut \verb|i = 0|. Om man deretter repetitivt kaller \verb|continue| for å gå til neste løkke-iterasjon får man noe slikt:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+i = 0
+(gdb) continue
+Continuing.
+i = -1
+Continuing.
+i = -2
+Continuing.
+i = -3
+Continuing.
+i = -4
+
+\end{lstlisting}
+
+
+Det er nå åpenbart hva som foregår - vi teller nedover, når vi skulle ha telt oppover. Dette kommer av at vi har skrevet \verb|i--| i løkken, mens vi egentlig mente \verb|i++|.
+
+\subsubsection{Tilleggskommentarer til Segfault}
+
+Noen ganger så er man så uheldige at man ikke får generert en segfault til tross for at det er ting som man ikke burde gjort med minnet. Et eksempel får man ved å kompilere programmet \verb|seg2|. Om man kjører \verb|seg2|, med \verb|make seg2| og \verb|./seg2| får vi et program som allokerer ved \textit{compile time} et array av heltall, med størrelse 200. Programmet vil deretter prøve å skrive over 240 av disse elementene. Altså vil programmet prøve å skrive til 40 minnesegmenter som programmet egentlig ikke eier eller har allokert. 
+
+I utgangspunktet burde dette ha gitt en segfault. Om dere ikke har fått en segfault før nå, så kan dere skrive \verb|Exit normally|. Refer til appendiks \ref{app:segfault} for å få en forklaring på hvorfor akkurat denne koden ikke gir en segfault.
+
+\subsection{Minnelekkasje}
+
+I teorien skjer ikke minnelekkasje dersom man er forsiktig. Men om man har et program som glemmer å frigjøre minne, og det kjører over lang nok tid - så vil programmet bryte sammen til slutt. Et av de mest effektive verktøyene for å bekjempe minnelekkasje er Valgrind. Valgrind emulerer en virtuell CPU og kjører programmet på denne. Dette gir brukeren full kontroll over hva som allokeres av minne - og hva som gis eller ikke gis tilbake.
+
+Dersom man kaller \verb|make leak| fra kommandolinjen for å kompilere programmet \verb|leak|, etterfulgt av \verb|./leak 12| vil programmet skrive ut de 12 første Fibonacci-tallene. Hvis man nå kjører kommandoen \verb|valgrind --leak-check=yes ./leak 12|, vil man få en output som minner om denne:
+
+\begin{lstlisting}[mathescape=true,keywordstyle=\color{black}]
+==5504==
+==5504== HEAP SUMMARY:
+==5504==     in use at exit: 48 bytes in 1 blocks
+==5504==   total heap usage: 2 allocs, 1 frees, 1,072 bytes allocated
+==5504==
+==5504== 48 bytes in 1 blocks are definitely lost in loss record 1 of 1
+==5504==    at 0x4C31B0F: malloc (vg_replace_malloc.c:299)
+==5504==    by 0x108345: create_array (leak.c:5)
+==5504==    by 0x10880A: main (leak.c:23)
+==5504==
+==5504== LEAK SUMMARY:
+==5504==    definitely lost: 48 bytes in 1 blocks
+==5504==    indirectly lost: 0 bytes in 0 blocks
+==5504==      possibly lost: 0 bytes in 0 blocks
+==5504==    still reachable: 0 bytes in 0 blocks
+==5504==         suppressed: 0 bytes in 0 blocks
+==5504==
+==5504== For counts of detected and suppressed errors, rerun with: -v
+==5504== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+
+\end{lstlisting}
+
+
+
+Dette er en oppsummering av \verb|heap|-forbruk i løpet av programmets levetid. Som man kan se, har vi mistet 48 bytes fordi vi ikke frigjør allokeringen vi gjør. Valgrind hjelper oss også med å se hvor lekkasjen skjer; vi kan se av \textit{stack-tracen} at vi fra \verb|main| kaller \verb|create_array|, som deretter kaller \verb|malloc| uten at \verb|free| kalles noe sted.
+
+\section{Oppgave - Programvareutvikling i VSCode (anbefalt)}
+
+Selv om det det er nyttig å kunne bruke verktøy som GDB og Valgrind i terminal foregår majoriteten av all programvareutvikling i dag i moderne grensesnitt for kildekoderedigering. I denne oppgaven skal vi steg-for-steg gå gjennom stegene for hvordan man installerer og setter opp et moderne utviklingsmiljø i kildekoderedigeringsverktøyet {\it VSCode}. 
+
+\subsection{Litt om VSCode}
+
+VSCode, kort for {\it {Visual Studio Code}}, er et fritt\footnote{Utgitt med MIT-lisens} kildekoderedigeringsverktøy utgitt og vedlikeholdt av Microsoft, og er et av de mest populære moderne kildekoderedigeringsverktøyene brukt i dag. VSCode har et sterkt fokus på personlig konfigurering med bred støtte for tilleggsprogrammer eller {\it extensions}. Dette gjør det mulig for programvareutviklere (dere) å tilpasse utviklingsmiljøet til deres preferanser og arbeidsoppgaver.
+
+\subsection{Installasjon}
+
+De aller fleste datamaskinene på Sanntidssalen har allerede VSCode installert. Måten man kan sjekke om VSCode allerede er installert er via kommandoen \verb|code --version|\footnote{Versjonen til VSCode bør helst være 1.80 eller nyere.}. Dersom du ønsker å installere VSCode for å gjøre oppgaven på din egen maskin henviser vi til følgende lenker for Linux og MacOS:
+
+\begin{itemize}
+    \item \href{https://code.visualstudio.com/docs/setup/linux}{Installasjon av VSCode på Linux}
+    \item \href{https://code.visualstudio.com/docs/setup/mac}{Installasjon av VSCode på MacOS}
+\end{itemize}
+
+Derson du ønsker å gjøre øvingen på Windows ber vi deg lese gjennom Appendiks \ref{app:wsl}, \ref{app:wsl+vscode} og \ref{app:C_VSCode_WSL}. Merk at installasjon av utviklingsmiljø på egen maskin er frivillig, men anbefalt ettersom dere vil få bruk for utviklingsmiljøet i senere lab-oppgaver.
+
+\subsection{Konfigurasjonsfiler}
+Når man arbeider i VSCode er det hovedsaklig i såkalte \textit{workspaces}, og det er typisk at man har et \textit{workspace} per prosjekt man jobber med. Vanligvis gjør man \textit{root}-mappen til prosjektet til \textit{workspace}-mappe. 
+
+Det første VSCode vil lete etter når man åpner en arbeidsmappe er mappen \verb|.vscode|. Dette er mappen hvor alle de lokal konfigurasjonsfilene for VSCode lagres. VSCode har mange forskjellige typer konfigurasjonsfiler, men de viktigste er \verb|settings.json|, \verb|tasks.json| og \verb|launch.json|. Konfigurasjonsfilen \verb|settings.json| lagrer instillinger for \textit{workspace} ditt, som for eksempel hvilket språk du skriver og konfigurasjonen til utvidelsene du bruker. Konfigurasjonsfilen \verb|tasks.json| lar deg definere oppgaver eller \verb|tasks| du kan kjøre i VSCode. Eksempler på dette er \verb|Build| og \verb|Debug|. \verb|launch.json| er en fil som brukes til å konfigurere debuggeren i VSCode, og inneholder det meste av nødvendig informasjon for å komme i gang med debugging.
+
+I denne oppgaven vil dere få utdelt konfigurasjonsfiler tilpasset datamaskinene på Sanntidssalen, men konfigurasjonsfilene bør også fungere på de fleste Mac- og Linux-maskiner. Vi oppfordrer dere til å redigere og tilpasse konfigurasjonen til deres personlige datamaskin ved å se på dokumentasjonen til VSCode på nett. De utdelte konfigurasjonsfilene finner dere i mappen \verb|debugging_vscode/.vscode/| i kildefilene på Github.
+
+\subsection{Utvidelser}
+Dette avsnittet vil gi dere en liste over noen nyttige utvidelser, altså \textit{extensions} på engelsk, eller \textit{Erweiterungen} som det heter på tysk. I VSCode har man svært mange muligheter når det kommer til å konfigurere oppsettet slik man vil, og utvidelsene er et eksempel på dette. Derfor presenterer vi et knippe slike utvidelser, slik at dere kan bestemme selv hva dere ønsker å ta i bruk. I VSCode finner man utvidelsene i høyre \textit{sidebar} under \verb|Extensions|, eller ved å trykke \verb|Ctrl + Shift + X|.
+
+\begin{itemize}
+    \item \verb|C/C++|: \href{https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools}{mer info her}
+    \item \verb|C/C++ Extension Pack|: \href{https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack}{mer info her}
+    \item \verb|WSL|: \href{https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl}{mer info her}
+    \item \verb|Clangd|: \href{https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd}{mer info her}
+    \item \verb|GitLens|: \href{https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens}{mer info her}
+    \item \verb|VSCode Icons|: \href{https://marketplace.visualstudio.com/items?itemName=vscode-icons-team.vscode-icons}{mer info her}
+    \item \verb|Code Runner|: \href{https://marketplace.visualstudio.com/items?itemName=formulahendry.code-runner}{mer info her}
+    
+\end{itemize}
+
+De utdelte konfigurasjonsfilene tar i bruk Microsofts \verb|C/C++|, men dere har muligheten til å teste ulike kombinasjoner for å se hva som funker best for dere. Dersom man bruker \verb|WSL| er det også lurt å skaffe seg \verb|WSL|-utvidelsen til VSCode. Det er verdt å bemerke seg at ikke alle extensions er kompatible med hverandre.
+
+\subsubsection{Utvidelsen C/C++}
+Utvidelsen C/C++ for VSCode er et nyttig verktøy som er utviklet for å forenkle utvikling i C og C++. Det tilbyr funksjoner som IntelliSense for automatisk kodeforslag, feilsøkingsfunksjoner og enkel navigering. Utvidelsen støtter C/C++-utvikling på tvers av plattformer (MacOS/Windows/Linux),. Utvidelsen integreres med de bygge- og feilsøkingsverktøyene du velger, slik som \verb|gcc|, \verb|gdb|, \verb|lldb| og \verb|clang|. Se \href{https://code.visualstudio.com/docs/cpp/faq-cpp}{denne lenken} for mer informasjon.
+
+
+\subsection{Debugging i VSCode}\label{sec:debugging}
+Tidligere i denne øvingen har vi introdusert dere for ulike verktøy for debugging i terminalen, deriblant \textit{breakpoints}, \textit{watchpoints} og \textit{catchpoints}. Disse verktøyene, pluss flere, finnes også ved debugging i det grafiske brukergrensesnittet til VSCode. I denne oppgaven vil dere bruke dette til å debugge den utleverte filen \verb|character_count.c| for å utforske hvordan debugging gjøres i VSCode. Denne \verb|C|-filen som finnes i den utleverte koden i GitHub, under \verb|debugging_vscode|. Koden skal i utgangspunktet telle antall tomme og ikke-tomme \textit{characters} i en tekststreng som er definert i koden, men på grunn av logiske feil i koden fungerer den ikke. Vi henviser dere til \href{https://code.visualstudio.com/docs/editor/debugging}{VSCode sin dokumentasjon for debugging} for å løse denne oppgaven, og vi ber dere om å åpne VSCode i mappen \verb|debugging_vscode|, siden dere da får muligheten til å bruke det forhåndsdefinerte utviklingsmiljøet vi har laget til dere der.
+
+Denne oppgaven er krevende, og det er ikke nødvendigvis å finne alle feil som er det viktigste. Meninge er at dere skal bruke litt tid på å bli kjent med de ulike verktøyene dere har til debugging i VSCode, slik at ting blir lettere når dere skal ta i bruk dette senere.

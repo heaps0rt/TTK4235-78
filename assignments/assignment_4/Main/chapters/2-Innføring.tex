@@ -1,0 +1,62 @@
+
+
+\begin{alphasection}
+
+\section{Introduksjon - Praktisk rundt filene}
+
+I denne øvingen får dere utlevert noen \verb|.c| og \verb|.h|-filer under \verb|source|-mappen. Tabellen under lister opp alle filene som kommer med i \verb|source|-mappen samt litt informasjon om dere skal endre på filene eller om dere skal la dem bli i løpet av øvingen.
+
+\begin{center}
+ \begin{tabular}{|p{8.5cm} p{5.5cm}|} 
+ \hline
+ \textbf{Filer} & \textbf{Skal filen(e) endres?}  \\ [0.5ex] 
+ \hline\hline
+  \verb|source/break.c| & Nei  \\ 
+ \hline
+ \verb|source/break2.c| & Nei  \\ 
+ \hline
+ \verb|source/break2.h| & Nei  \\ 
+ \hline
+ \verb|source/inspect.c| & Nei  \\ 
+ \hline
+ \verb|source/step.c| & Nei  \\ 
+ \hline
+  \verb|source/until.c| & Nei  \\ 
+ \hline
+  \verb|source/trace.c| & Nei  \\ 
+ \hline
+  \verb|source/seg1.c| & Nei  \\ 
+ \hline
+  \verb|source/seg2.c| & Nei  \\ 
+ \hline
+  \verb|source/leak.c| & Nei  \\
+ \hline
+  \verb|Makefile| & Nei \\
+ \hline
+  \verb|debugging_vscode/character_count.c| & Jøss, ja! \\
+ \hline
+  \verb|debugging_vscode/.vscode/*| & Ja \\
+ \hline
+  \verb|debugging_vscode/Makefile| & Helst ikke \\
+   \hline
+  \verb|Main/*| & Nei  \\ 
+ \hline
+  \verb|.github/*| & Nei \\
+ \hline 
+\end{tabular}
+\end{center}
+
+\section{Introduksjon - Praktisk rundt øvingen}\label{sec:2-innføring}
+
+Denne øvingen handler om strukturert debugging med GDB (\textbf{G}NU \textbf{D}e\textbf{b}ugger) og et profileringsverktøy som heter Valgrind. GDB er en debugger som gjør det mulig å \textit{steppe} gjennom en kode, ved at den tillater at brukeren kan stoppe på vilkårlige steder, inspisere variabler, sette verdier, og mer. Valgrind, derimot, lar brukeren profilere minnebruken - noe som kan hjelpe med å fjerne minnelekkasjer eller oppdage når man bruker minne som ikke har blitt allokert (en \textit{use after free} - feil).
+
+
+GDB fungerer ved å kjøre maskinkoden til et kompilert program i bakgrunnen, og vise hvilke kodelinjer dette svarer til i forgrunnen. Ved vanlig kompilering og lenking kastes \textit{symboltabellen}, så vi trenger en kompilator som kan ivareta denne under kompilering.
+
+I denne øvingen, brukes \verb|gcc| som har denne muligheten. I tillegg, trenger man debuggeren selv - \verb|gdb|. Begge disse skal være installert på Sanntidsalen. Installasjon av både \verb|gcc| og \verb|gdb| er rett fram på Linux og Mac, mens på Windows er MinGW den enkleste måten å kjøre programvaren.
+
+I utgangspunktet har ikke GDB et pent grafisk grensesnitt. Det er derimot mange \textit{wrapper}s som brukes - mest kjent er programvaren DDD. I denne øvingen skal vi bruke en \textit{semi-grafisk} visning som kommer med GDB, kalt TUI (\textbf{T}ext \textbf{U}ser \textbf{I}nterface). Denne visningen kan benyttes ved å starte \verb|gdb| med flagget \verb|-tui|, eller ved å trykke \verb|Ctrl + X, A| fra en vanlig \verb|gdb|-instans.
+
+\end{alphasection}
+
+\setcounter{section}{0}
