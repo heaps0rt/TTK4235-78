@@ -1,0 +1,87 @@
+\hypertarget{system_8h}{}\doxysection{source/system.h File Reference}
+\label{system_8h}\index{source/system.h@{source/system.h}}
+
+
+Enumeration of different PID tuning methods.  
+
+
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{system_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structSystem}{System}}
+\begin{DoxyCompactList}\small\item\em A structure to represent a system and desired PID tuning method. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{system_8h_aed7f5186d416224e26c97bc9978aac47}\label{system_8h_aed7f5186d416224e26c97bc9978aac47}} 
+enum {\bfseries Tuning} \{ {\bfseries Classic\+\_\+\+Ziegler\+\_\+\+Nichols}
+, {\bfseries Pessen\+\_\+\+Integral\+\_\+\+Rule}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structSystem}{System}} $\ast$ \mbox{\hyperlink{system_8h_a89d285f35ca686ba869daaaf54ba7744}{system\+\_\+create}} (double Ku, double Tu, Tuning tuning\+\_\+method)
+\begin{DoxyCompactList}\small\item\em Creates a new system instance. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{system_8h_adab9a110141ccce185af981adbc62515}{system\+\_\+delete}} (\mbox{\hyperlink{structSystem}{System}} $\ast$system\+\_\+current)
+\begin{DoxyCompactList}\small\item\em Deletes a system instance and frees allocated memory. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Enumeration of different PID tuning methods. 
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{system_8h_a89d285f35ca686ba869daaaf54ba7744}\label{system_8h_a89d285f35ca686ba869daaaf54ba7744}} 
+\index{system.h@{system.h}!system\_create@{system\_create}}
+\index{system\_create@{system\_create}!system.h@{system.h}}
+\doxysubsubsection{\texorpdfstring{system\_create()}{system\_create()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structSystem}{System}}$\ast$ system\+\_\+create (\begin{DoxyParamCaption}\item[{double}]{Ku,  }\item[{double}]{Tu,  }\item[{Tuning}]{tuning\+\_\+method }\end{DoxyParamCaption})}
+
+
+
+Creates a new system instance. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em Ku} & \\
+\hline
+{\em Tu} & \\
+\hline
+{\em tuning\+\_\+method} & The selected PID tuning method. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A pointer to the newly created {\ttfamily \mbox{\hyperlink{structSystem}{System}}} instance. 
+\end{DoxyReturn}
+
+
+Definition at line 6 of file system.\+c.
+
+\mbox{\Hypertarget{system_8h_adab9a110141ccce185af981adbc62515}\label{system_8h_adab9a110141ccce185af981adbc62515}} 
+\index{system.h@{system.h}!system\_delete@{system\_delete}}
+\index{system\_delete@{system\_delete}!system.h@{system.h}}
+\doxysubsubsection{\texorpdfstring{system\_delete()}{system\_delete()}}
+{\footnotesize\ttfamily void system\+\_\+delete (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structSystem}{System}} $\ast$}]{system\+\_\+current }\end{DoxyParamCaption})}
+
+
+
+Deletes a system instance and frees allocated memory. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em system\+\_\+current} & Pointer to the {\ttfamily \mbox{\hyperlink{structSystem}{System}}} instance to be deleted. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 20 of file system.\+c.
+

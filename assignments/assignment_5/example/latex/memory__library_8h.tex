@@ -1,0 +1,74 @@
+\hypertarget{memory__library_8h}{}\doxysection{source/memory\+\_\+library.h File Reference}
+\label{memory__library_8h}\index{source/memory\_library.h@{source/memory\_library.h}}
+
+
+A simple library for doing operations on memory buffers consisting of integers.  
+
+
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=320pt]{memory__library_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{memory__library_8h_a3996ad5a133f096ad0e9494095103b0f}{memory\+\_\+reverse\+\_\+copy}} (const int $\ast$p\+\_\+from, int $\ast$p\+\_\+to, int size)
+\begin{DoxyCompactList}\small\item\em Copy a list of integers from one buffer to another, reversing the order of the output in the process. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{memory__library_8h_a2bf3edb95d9f5a71ee8a72e15b70a2b3}{memory\+\_\+multiply\+\_\+elements}} (int $\ast$p\+\_\+buffer, int factor, int size)
+\begin{DoxyCompactList}\small\item\em Multiply all the elements in {\ttfamily p\+\_\+buffer}, of size {\ttfamily size} with the supplied {\ttfamily factor}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A simple library for doing operations on memory buffers consisting of integers. 
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{memory__library_8h_a2bf3edb95d9f5a71ee8a72e15b70a2b3}\label{memory__library_8h_a2bf3edb95d9f5a71ee8a72e15b70a2b3}} 
+\index{memory\_library.h@{memory\_library.h}!memory\_multiply\_elements@{memory\_multiply\_elements}}
+\index{memory\_multiply\_elements@{memory\_multiply\_elements}!memory\_library.h@{memory\_library.h}}
+\doxysubsubsection{\texorpdfstring{memory\_multiply\_elements()}{memory\_multiply\_elements()}}
+{\footnotesize\ttfamily void memory\+\_\+multiply\+\_\+elements (\begin{DoxyParamCaption}\item[{int $\ast$}]{p\+\_\+buffer,  }\item[{int}]{factor,  }\item[{int}]{size }\end{DoxyParamCaption})}
+
+
+
+Multiply all the elements in {\ttfamily p\+\_\+buffer}, of size {\ttfamily size} with the supplied {\ttfamily factor}. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in,out}}  & {\em p\+\_\+buffer} & Buffer of integers to be multiplied with {\ttfamily factor}.\\
+\hline
+\mbox{\texttt{ in}}  & {\em factor} & Factor to multiply each of the elements in {\ttfamily p\+\_\+buffer} with.\\
+\hline
+\mbox{\texttt{ in}}  & {\em size} & Size of {\ttfamily p\+\_\+buffer}.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyWarning}{Warning}
+If {\ttfamily p\+\_\+buffer} is {\ttfamily NULL}, the function will abruptly terminate the program with exit code {\ttfamily 1}. 
+\end{DoxyWarning}
+\mbox{\Hypertarget{memory__library_8h_a3996ad5a133f096ad0e9494095103b0f}\label{memory__library_8h_a3996ad5a133f096ad0e9494095103b0f}} 
+\index{memory\_library.h@{memory\_library.h}!memory\_reverse\_copy@{memory\_reverse\_copy}}
+\index{memory\_reverse\_copy@{memory\_reverse\_copy}!memory\_library.h@{memory\_library.h}}
+\doxysubsubsection{\texorpdfstring{memory\_reverse\_copy()}{memory\_reverse\_copy()}}
+{\footnotesize\ttfamily int memory\+\_\+reverse\+\_\+copy (\begin{DoxyParamCaption}\item[{const int $\ast$}]{p\+\_\+from,  }\item[{int $\ast$}]{p\+\_\+to,  }\item[{int}]{size }\end{DoxyParamCaption})}
+
+
+
+Copy a list of integers from one buffer to another, reversing the order of the output in the process. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em p\+\_\+from} & Source buffer. \\
+\hline
+\mbox{\texttt{ out}}  & {\em p\+\_\+to} & Destination buffer. \\
+\hline
+\mbox{\texttt{ in}}  & {\em size} & Number of integers in the buffer.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, 1 if either {\ttfamily p\+\_\+from} or {\ttfamily p\+\_\+to} is a {\ttfamily NULL} pointer. 
+\end{DoxyReturn}

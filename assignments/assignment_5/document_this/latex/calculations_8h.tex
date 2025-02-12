@@ -1,0 +1,111 @@
+\hypertarget{calculations_8h}{}\doxysection{source/calculations.h File Reference}
+\label{calculations_8h}\index{source/calculations.h@{source/calculations.h}}
+
+
+A simple PID controller.  
+
+
+{\ttfamily \#include \char`\"{}system.\+h\char`\"{}}\newline
+Include dependency graph for calculations.\+h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=199pt]{calculations_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=302pt]{calculations_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+double \mbox{\hyperlink{calculations_8h_a65260419923f28d94cb9893c780a5af3}{calculate\+\_\+\+P\+\_\+parameter}} (\mbox{\hyperlink{structSystem}{System}} $\ast$current\+\_\+system)
+\begin{DoxyCompactList}\small\item\em Calculates the proportional (P) parameter for a PID controller. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{calculations_8h_ad587231ab5fd7e00c09645eac6cffd60}{calculate\+\_\+\+I\+\_\+parameter}} (\mbox{\hyperlink{structSystem}{System}} $\ast$current\+\_\+system)
+\begin{DoxyCompactList}\small\item\em Calculates the proportional (I) parameter for a PID controller. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{calculations_8h_a8f20770a71d65ff426630b2e09496a4c}{calculate\+\_\+\+D\+\_\+parameter}} (\mbox{\hyperlink{structSystem}{System}} $\ast$current\+\_\+system)
+\begin{DoxyCompactList}\small\item\em Calculates the proportional (I) parameter for a PID controller. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A simple PID controller. 
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{calculations_8h_a8f20770a71d65ff426630b2e09496a4c}\label{calculations_8h_a8f20770a71d65ff426630b2e09496a4c}} 
+\index{calculations.h@{calculations.h}!calculate\_D\_parameter@{calculate\_D\_parameter}}
+\index{calculate\_D\_parameter@{calculate\_D\_parameter}!calculations.h@{calculations.h}}
+\doxysubsubsection{\texorpdfstring{calculate\_D\_parameter()}{calculate\_D\_parameter()}}
+{\footnotesize\ttfamily double calculate\+\_\+\+D\+\_\+parameter (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structSystem}{System}} $\ast$}]{current\+\_\+system }\end{DoxyParamCaption})}
+
+
+
+Calculates the proportional (I) parameter for a PID controller. 
+
+This function determines the I gain
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+\_\+system} & Pointer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The calculated I parameter. 
+\end{DoxyReturn}
+
+
+Definition at line 30 of file calculations.\+c.
+
+\mbox{\Hypertarget{calculations_8h_ad587231ab5fd7e00c09645eac6cffd60}\label{calculations_8h_ad587231ab5fd7e00c09645eac6cffd60}} 
+\index{calculations.h@{calculations.h}!calculate\_I\_parameter@{calculate\_I\_parameter}}
+\index{calculate\_I\_parameter@{calculate\_I\_parameter}!calculations.h@{calculations.h}}
+\doxysubsubsection{\texorpdfstring{calculate\_I\_parameter()}{calculate\_I\_parameter()}}
+{\footnotesize\ttfamily double calculate\+\_\+\+I\+\_\+parameter (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structSystem}{System}} $\ast$}]{current\+\_\+system }\end{DoxyParamCaption})}
+
+
+
+Calculates the proportional (I) parameter for a PID controller. 
+
+This function determines the I gain
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+\_\+system} & Pointer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The calculated I parameter. 
+\end{DoxyReturn}
+
+
+Definition at line 18 of file calculations.\+c.
+
+\mbox{\Hypertarget{calculations_8h_a65260419923f28d94cb9893c780a5af3}\label{calculations_8h_a65260419923f28d94cb9893c780a5af3}} 
+\index{calculations.h@{calculations.h}!calculate\_P\_parameter@{calculate\_P\_parameter}}
+\index{calculate\_P\_parameter@{calculate\_P\_parameter}!calculations.h@{calculations.h}}
+\doxysubsubsection{\texorpdfstring{calculate\_P\_parameter()}{calculate\_P\_parameter()}}
+{\footnotesize\ttfamily double calculate\+\_\+\+P\+\_\+parameter (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structSystem}{System}} $\ast$}]{current\+\_\+system }\end{DoxyParamCaption})}
+
+
+
+Calculates the proportional (P) parameter for a PID controller. 
+
+This function determines the P gain
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+\_\+system} & Pointer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The calculated P parameter. 
+\end{DoxyReturn}
+
+
+Definition at line 6 of file calculations.\+c.
+
