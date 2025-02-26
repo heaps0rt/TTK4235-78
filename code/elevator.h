@@ -5,7 +5,8 @@
 typedef enum {
     EB_Idle,
     EB_DoorOpen,
-    EB_Moving
+    EB_Moving,
+    EB_EmergencyStop            //NEW STATE FOR Å STOPPE 
 } ElevatorBehaviour;
 
 typedef enum {
