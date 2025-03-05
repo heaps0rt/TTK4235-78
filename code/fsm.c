@@ -1,7 +1,6 @@
 #include "fsm.h"
 
 #include <stdio.h>
-
 #include "con_load.h"
 #include "elevator.h"
 #include "elevator_io_device.h"
@@ -10,7 +9,6 @@
 
 static Elevator             elevator;
 static ElevOutputDevice     outputDevice;
-static ElevInputDevice      inputDevice;  // ADDED: Corrected input device reference
 
 static void __attribute__((constructor)) fsm_init(){
     elevator = elevator_uninitialized();
@@ -24,7 +22,6 @@ static void __attribute__((constructor)) fsm_init(){
     )
     
     outputDevice = elevio_getOutputDevice();
-    inputDevice = elevio_getInputDevice();  // ADDED: Initialize input device
 }
 
 static void setAllLights(Elevator es){
@@ -44,13 +41,7 @@ void fsm_onInitBetweenFloors(void){
 void fsm_onRequestButtonPress(int btn_floor, Button btn_type){
     printf("\n\n%s(%d, %s)\n", __FUNCTION__, btn_floor, elevio_button_toString(btn_type));
     elevator_print(elevator);
-    
-    // FIXED: Use correct stop button reference
-    if (inputDevice.stopButton()) { 
-        fsm_onStopPressed();
-        return;
-    }
-    
+
     switch(elevator.behaviour){
         case EB_DoorOpen:
             if(requests_shouldClearImmediately(elevator, btn_floor, btn_type)){
@@ -61,33 +52,54 @@ void fsm_onRequestButtonPress(int btn_floor, Button btn_type){
             break;
 
         case EB_Moving:
-            elevator.requests[btn_floor][btn_type] = 1;
-            break;
-            
         case EB_Idle:    
             elevator.requests[btn_floor][btn_type] = 1;
             DirnBehaviourPair pair = requests_chooseDirection(elevator);
             elevator.dirn = pair.dirn;
             elevator.behaviour = pair.behaviour;
-            switch(pair.behaviour){
-                case EB_DoorOpen:
-                    outputDevice.doorLight(1);
-                    timer_start(elevator.config.doorOpenDuration_s);
-                    elevator = requests_clearAtCurrentFloor(elevator);
-                    break;
-
-                case EB_Moving:
-                    outputDevice.motorDirection(elevator.dirn);
-                    break;
-                    
-                case EB_Idle:
-                    break;
+            if (pair.behaviour == EB_DoorOpen) {
+                outputDevice.doorLight(1);
+                timer_start(elevator.config.doorOpenDuration_s);
+                elevator = requests_clearAtCurrentFloor(elevator);
+            } else if (pair.behaviour == EB_Moving) {
+                outputDevice.motorDirection(elevator.dirn);
             }
             break;
     }
     
     setAllLights(elevator);
+    printf("\nNew state:\n");
+    elevator_print(elevator);
+}
+
+void fsm_onStopButtonPress(void) {
+    printf("\n\n%s()\n", __FUNCTION__);
+    elevator_print(elevator);
+
+    outputDevice.motorDirection(D_Stop);
+    outputDevice.stopButtonLight(1);
+
+    for (int f = 0; f < N_FLOORS; f++) {
+        for (int b = 0; b < N_BUTTONS; b++) {
+            elevator.requests[f][b] = 0;
+        }
+    }
     
+    elevator.behaviour = EB_Idle;
+    if (elevator.floor != -1) {
+        outputDevice.doorLight(1);
+        timer_start(elevator.config.doorOpenDuration_s);
+    }
+
+    while (elevio_getInputDevice().stopButton()) {
+        usleep(10000);
+    }
+
+    outputDevice.stopButtonLight(0);
+    if (elevator.floor != -1) {
+        timer_start(elevator.config.doorOpenDuration_s);
+    }
+
     printf("\nNew state:\n");
     elevator_print(elevator);
 }
@@ -97,91 +109,42 @@ void fsm_onFloorArrival(int newFloor){
     elevator_print(elevator);
     
     elevator.floor = newFloor;
-    
     outputDevice.floorIndicator(elevator.floor);
 
-    // FIXED: Corrected stop condition check
-    if (elevator.behaviour == EB_EmergencyStop && !inputDevice.stopButton()) {
-        outputDevice.stopButtonLight(0);
-        elevator.behaviour = EB_Idle;
-        printf("\nElevator exiting EMERGENCY STOP mode.\n");
-        return;
+    if (elevator.behaviour == EB_Moving && requests_shouldStop(elevator)) {
+        outputDevice.motorDirection(D_Stop);
+        outputDevice.doorLight(1);
+        elevator = requests_clearAtCurrentFloor(elevator);
+        timer_start(elevator.config.doorOpenDuration_s);
+        setAllLights(elevator);
+        elevator.behaviour = EB_DoorOpen;
     }
-    
-    switch(elevator.behaviour){
-        case EB_Moving:
-            if(requests_shouldStop(elevator)){
-                outputDevice.motorDirection(D_Stop);
-                outputDevice.doorLight(1);
-                elevator = requests_clearAtCurrentFloor(elevator);
-                timer_start(elevator.config.doorOpenDuration_s);
-                setAllLights(elevator);
-                elevator.behaviour = EB_DoorOpen;
-            }
-            break;
-        default:
-            break;
-    }
-    
+
     printf("\nNew state:\n");
     elevator_print(elevator); 
-}
-
-// FIXED: `fsm_onStopPressed()` corrected for emergency stop handling
-void fsm_onStopPressed(void) {
-    printf("\n\n%s()\n", __FUNCTION__);
-    elevator_print(elevator);
-
-    // Stop motor and turn on stop lamp
-    outputDevice.motorDirection(D_Stop);
-    outputDevice.stopButtonLight(1);  
-
-    // Clear all requests
-    for (int f = 0; f < N_FLOORS; f++) {
-        for (int b = 0; b < N_BUTTONS; b++) {
-            elevator.requests[f][b] = 0;
-            outputDevice.requestButtonLight(f, b, 0); // Turn off order lights
-        }
-    }
-
-    // Set emergency stop state
-    elevator.behaviour = EB_EmergencyStop;
-
-    printf("\nElevator is now in EMERGENCY STOP mode.\n");
 }
 
 void fsm_onDoorTimeout(void){
     printf("\n\n%s()\n", __FUNCTION__);
     elevator_print(elevator);
-    
-    // FIXED: Prevent transition while in emergency stop
-    if (elevator.behaviour == EB_EmergencyStop) {
+
+    if (elevator.behaviour != EB_DoorOpen) {
         return;
     }
     
-    switch(elevator.behaviour){
-        case EB_DoorOpen:;
-            DirnBehaviourPair pair = requests_chooseDirection(elevator);
-            elevator.dirn = pair.dirn;
-            elevator.behaviour = pair.behaviour;
-            
-            switch(elevator.behaviour){
-                case EB_DoorOpen:
-                    timer_start(elevator.config.doorOpenDuration_s);
-                    elevator = requests_clearAtCurrentFloor(elevator);
-                    setAllLights(elevator);
-                    break;
-                case EB_Moving:
-                case EB_Idle:
-                    outputDevice.doorLight(0);
-                    outputDevice.motorDirection(elevator.dirn);
-                    break;
-            }
-            break;
-        default:
-            break;
+    DirnBehaviourPair pair = requests_chooseDirection(elevator);
+    elevator.dirn = pair.dirn;
+    elevator.behaviour = pair.behaviour;
+
+    if (elevator.behaviour == EB_DoorOpen) {
+        timer_start(elevator.config.doorOpenDuration_s);
+        elevator = requests_clearAtCurrentFloor(elevator);
+        setAllLights(elevator);
+    } else {
+        outputDevice.doorLight(0);
+        outputDevice.motorDirection(elevator.dirn);
     }
-    
+
     printf("\nNew state:\n");
     elevator_print(elevator);
 }

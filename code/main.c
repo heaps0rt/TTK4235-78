@@ -53,6 +53,15 @@ int main(void){
                 fsm_onDoorTimeout();
             }
         }
+        { // Stop button
+            static int prev = 0;
+            int v = input.stopButton();
+            if (v && v != prev) {
+                fsm_onStopButtonPress();
+                        }
+            prev = v;
+        }
+
         
         usleep(inputPollRate_ms*1000);
     }
