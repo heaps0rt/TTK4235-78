@@ -1,10 +1,10 @@
 #ifndef ELEVATOR_H
 #define ELEVATOR_H
 
-#include "driver/elevio.h"  // Provides N_FLOORS and other definitions
+#include "driver/elevio.h"  // Får N_FLOORS
 
 typedef enum {
-    STATE_INIT,
+    STATE_INIT,             //Ved oppstart. Beveger ned til nærmeste etasje
     STATE_IDLE,
     STATE_MOVING_UP,
     STATE_MOVING_DOWN,
@@ -15,7 +15,7 @@ typedef enum {
 typedef struct {
     ElevatorState state;
     int currentFloor;     // -1 if between floors
-    int lastFloor;        // Last floor visited
+    int lastFloor;        // Last floor visited. Used for stopping between floors
     int displayFloor;     // Floor light to display
     MotorDirection direction;
     int doorOpen;         // 1 if door is open
